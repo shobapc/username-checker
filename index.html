@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Twitter Username Checker</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="shortcut icon" type="image/png" href="logo.png">
     <style>
         /* Reset and Base Styles */
         * {
@@ -657,18 +659,23 @@
             </div>
 
             <div class="section">
-                <h3 class="section-title">🔗 All Corrected Links</h3>
-                <button class="copy-btn copy-column-btn" onclick="copyColumn('links')">Copy All Links</button>
-                <div class="table-container">
-                    <table id="links-table"></table>
+                <h3 class="section-title">📋 All Corrected Results</h3>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="copy-btn" onclick="copyColumn('links')">Copy All Links</button>
+                    <button class="copy-btn" onclick="copyColumn('usernames')">Copy All Usernames</button>
                 </div>
-            </div>
-
-            <div class="section">
-                <h3 class="section-title">👤 All Corrected Usernames</h3>
-                <button class="copy-btn copy-column-btn" onclick="copyColumn('usernames')">Copy All Usernames</button>
                 <div class="table-container">
-                    <table id="usernames-table"></table>
+                    <table id="combined-table">
+                        <thead>
+                            <tr>
+                                <th>Links</th>
+                                <th>Usernames</th>
+                            </tr>
+                        </thead>
+                        <tbody id="combined-tbody">
+                            <!-- Combined data will be inserted here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -960,41 +967,20 @@
                 document.getElementById('summary-section').style.display = 'none';
             }
 
-            // Links table
-            let linksHtml = `
-                <thead>
-                    <tr>
-                        <th>Link</th>
-                    </tr>
-                </thead>
-                <tbody>
-            `;
-
+            // Combined table with links and usernames
+            let combinedHtml = '';
             results.forEach(item => {
                 const link = item.link || `https://x.com/${item.originalUsername}`;
-                linksHtml += `<tr><td>${link}</td></tr>`;
-            });
-
-            linksHtml += '</tbody>';
-            document.getElementById('links-table').innerHTML = linksHtml;
-
-            // Usernames table
-            let usernamesHtml = `
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                    </tr>
-                </thead>
-                <tbody>
-            `;
-
-            results.forEach(item => {
                 const username = item.newUsername || item.originalUsername;
-                usernamesHtml += `<tr><td>@${username}</td></tr>`;
+                combinedHtml += `
+                    <tr>
+                        <td>${link}</td>
+                        <td>@${username}</td>
+                    </tr>
+                `;
             });
 
-            usernamesHtml += '</tbody>';
-            document.getElementById('usernames-table').innerHTML = usernamesHtml;
+            document.getElementById('combined-tbody').innerHTML = combinedHtml;
         }
 
         function copyColumn(type) {
