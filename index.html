@@ -776,28 +776,50 @@
             setTimeout(() => displayResults(), 500);
         }
 
-        async function loadSheetData() {
-            if (sheetData) return;
+        let sheetDataLoading = null; // Promise to prevent multiple simultaneous loads
 
-            try {
-                const response = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`);
-                const text = await response.text();
-                const json = JSON.parse(text.substring(47).slice(0, -2));
-                
-                sheetData = {};
-                json.table.rows.forEach(row => {
-                    if (row.c[0] && row.c[1]) {
-                        const username = row.c[0].v ? row.c[0].v.toLowerCase() : null;
-                        const twitterId = row.c[1].v ? row.c[1].v.toString() : null;
-                        if (username && twitterId) {
-                            sheetData[username] = twitterId;
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading sheet:', error);
-                sheetData = {};
+        async function loadSheetData() {
+            // Return cached data if already loaded
+            if (sheetData) {
+                console.log('✅ Using cached sheet data');
+                return;
             }
+
+            // If already loading, wait for that request to complete
+            if (sheetDataLoading) {
+                console.log('⏳ Waiting for sheet data to load...');
+                await sheetDataLoading;
+                return;
+            }
+
+            // Start loading and cache the promise
+            console.log('📥 Loading Google Sheet data (ONCE)...');
+            sheetDataLoading = (async () => {
+                try {
+                    const response = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`);
+                    const text = await response.text();
+                    const json = JSON.parse(text.substring(47).slice(0, -2));
+                    
+                    sheetData = {};
+                    json.table.rows.forEach(row => {
+                        if (row.c[0] && row.c[1]) {
+                            const username = row.c[0].v ? row.c[0].v.toLowerCase() : null;
+                            const twitterId = row.c[1].v ? row.c[1].v.toString() : null;
+                            if (username && twitterId) {
+                                sheetData[username] = twitterId;
+                            }
+                        }
+                    });
+                    console.log(`✅ Loaded ${Object.keys(sheetData).length} usernames from sheet`);
+                } catch (error) {
+                    console.error('❌ Error loading sheet:', error);
+                    sheetData = {};
+                } finally {
+                    sheetDataLoading = null;
+                }
+            })();
+
+            await sheetDataLoading;
         }
 
         async function getChallenge() {
@@ -941,20 +963,25 @@
                     <tr>
                         <th>Old Username</th>
                         <th>New Username</th>
+                        <th style="width: 100px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
             `;
 
-            summaryData.forEach(item => {
+            summaryData.forEach((item, index) => {
                 const rowClass = item.status === 'expired' ? 'na-row' : '';
                 const newUsername = item.status === 'expired' ? 'N/A' : item.newUsername;
                 const newClass = item.status === 'expired' ? 'na-text' : 'new-username';
+                const copyBtn = item.status !== 'expired' 
+                    ? `<button class="copy-btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="copyText('@${item.newUsername}', this)">Copy</button>`
+                    : '';
                 
                 summaryHtml += `
                     <tr class="${rowClass}">
                         <td class="old-username">@${item.originalUsername}</td>
                         <td class="${newClass}">@${newUsername}</td>
+                        <td>${copyBtn}</td>
                     </tr>
                 `;
             });
@@ -1001,6 +1028,20 @@
                     btn.textContent = originalText;
                     btn.classList.remove('copied');
                 }, 2000);
+            });
+        }
+
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 1500);
+            }).catch(err => {
+                console.error('Copy failed:', err);
             });
         }
 
