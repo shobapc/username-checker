@@ -613,7 +613,7 @@
                             maxlength="50000"
                         ></textarea>
                         <div class="input-info">
-                            <span class="info-text">Maximum 1000 usernames • Supports @username, x.com/username, twitter.com/username formats</span>
+                            <span class="info-text">Maximum 500 usernames • Supports @username, x.com/username, twitter.com/username formats</span>
                         </div>
                     </div>
                     <button type="submit" class="search-button">
@@ -683,18 +683,29 @@
 
     <script>
         const SHEET_ID = '1ijBFvbjazdTmstXqTYd3veDp5N-0i-uQXMmumNZxgjA';
-        // Netlify Function URL - automatically works when deployed
-        const API_PROXY = '/.netlify/functions/proxy';
-        const BATCH_SIZE = 50; // Parallel requests
+        const API_PROXY = 'https://turboapi.org';
+        const BATCH_SIZE = 20;
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 1000;
 
         let sheetData = null;
         let results = [];
+        let challengeCache = null;
+        let challengeCacheTime = 0;
+        const CHALLENGE_CACHE_DURATION = 50000;
 
         // Update username counter
         document.getElementById('usernames-input').addEventListener('input', function() {
             const text = this.value.trim();
             const count = text ? text.split('\n').filter(line => line.trim()).length : 0;
-            document.getElementById('username-counter').textContent = `${count} username${count !== 1 ? 's' : ''}`;
+            const counterEl = document.getElementById('username-counter');
+            counterEl.textContent = `${count} username${count !== 1 ? 's' : ''}`;
+            
+            if (count > 500) {
+                counterEl.style.color = '#ff6b6b';
+            } else {
+                counterEl.style.color = '';
+            }
         });
 
         // Form submission
@@ -712,8 +723,8 @@
                 return;
             }
 
-            if (usernames.length > 1000) {
-                alert('Maximum 1000 usernames allowed');
+            if (usernames.length > 500) {
+                alert('Maximum 500 usernames allowed');
                 return;
             }
 
@@ -801,9 +812,17 @@
         }
 
         async function getChallenge() {
+            const now = Date.now();
+            if (challengeCache && (now - challengeCacheTime) < CHALLENGE_CACHE_DURATION) {
+                return challengeCache;
+            }
+            
             try {
                 const response = await fetch(`${API_PROXY}?endpoint=challenge`);
-                return await response.json();
+                const data = await response.json();
+                challengeCache = data;
+                challengeCacheTime = now;
+                return data;
             } catch (error) {
                 console.error('Challenge error:', error);
                 return null;
@@ -823,9 +842,15 @@
             return hash.substring(0, 8);
         }
 
-        async function checkUsernameAPI(username, challengeId, solution) {
+        async function checkUsernameAPI(username, challengeId, solution, retryCount = 0) {
             try {
                 const response = await fetch(`${API_PROXY}?endpoint=x-id&id=${encodeURIComponent(username)}&challenge_id=${challengeId}&challenge_solution=${solution}`);
+
+                // Retry ONLY on 429 or 500+ errors
+                if ((response.status === 429 || response.status >= 500) && retryCount < MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+                    return await checkUsernameAPI(username, challengeId, solution, retryCount + 1);
+                }
 
                 if (response.ok) {
                     const text = await response.text();
@@ -840,7 +865,12 @@
                 }
                 return null;
             } catch (error) {
-                console.error('API error:', error);
+                // Retry on network errors
+                if (retryCount < MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+                    return await checkUsernameAPI(username, challengeId, solution, retryCount + 1);
+                }
+                console.error('API error after retries:', error);
                 return null;
             }
         }
@@ -935,7 +965,7 @@
             document.getElementById('stats-grid').innerHTML = statsHtml;
 
             // Summary table (changed and expired only)
-            const summaryData = results.filter(r => r.status === 'changed' || r.status === 'expired');
+            const summaryData = results.filter(r => r.status === 'changed' || r.status === 'expired' || r.status === 'not_found');
             let summaryHtml = `
                 <thead>
                     <tr>
@@ -947,14 +977,15 @@
             `;
 
             summaryData.forEach(item => {
-                const rowClass = item.status === 'expired' ? 'na-row' : '';
-                const newUsername = item.status === 'expired' ? 'N/A' : item.newUsername;
-                const newClass = item.status === 'expired' ? 'na-text' : 'new-username';
+                const isNotFound = item.status === 'expired' || item.status === 'not_found';
+                const rowClass = isNotFound ? 'na-row' : '';
+                const newUsername = isNotFound ? 'N/A' : item.newUsername;
+                const newClass = isNotFound ? 'na-text' : 'new-username';
                 
                 summaryHtml += `
                     <tr class="${rowClass}">
                         <td class="old-username">@${item.originalUsername}</td>
-                        <td class="${newClass}">@${newUsername}</td>
+                        <td class="${newClass}">${isNotFound ? 'N/A' : '@' + newUsername}</td>
                     </tr>
                 `;
             });
