@@ -1,0 +1,8 @@
+{
+  "name": "twitter-username-checker",
+  "version": "1.0.0",
+  "description": "Twitter username checker with proxy",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}

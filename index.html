@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Username Checker</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Page Management */
+        .page {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Landing Page Styles */
+        .landing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .landing-container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 20%, rgba(79, 195, 247, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(41, 182, 246, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 4rem;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 25px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .logo-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            border-color: rgba(79, 195, 247, 0.3);
+        }
+
+        .main-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            border: 3px solid rgba(79, 195, 247, 0.2);
+        }
+
+        .main-logo:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 20px 50px rgba(79, 195, 247, 0.3);
+            border-color: rgba(79, 195, 247, 0.5);
+        }
+
+        .title-section {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 0%, #4FC3F7 50%, #29B6F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            color: #bbb;
+            font-size: 1.3rem;
+            font-weight: 400;
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            width: 100%;
+        }
+
+        .usernames-input-container {
+            position: relative;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .usernames-input-container:hover {
+            border-color: rgba(79, 195, 247, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .input-label {
+            font-size: 1.2rem;
+            color: #fff;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-label::before {
+            content: "✨";
+            font-size: 1rem;
+        }
+
+        .input-counter {
+            font-size: 0.95rem;
+            color: #4FC3F7;
+            font-weight: 700;
+            background: linear-gradient(45deg, rgba(79, 195, 247, 0.2), rgba(41, 182, 246, 0.2));
+            padding: 0.5rem 1.2rem;
+            border-radius: 25px;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .usernames-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1.8rem;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: #ffffff;
+            outline: none;
+            transition: all 0.3s ease;
+            resize: vertical;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            line-height: 1.8;
+            backdrop-filter: blur(10px);
+        }
+
+        .usernames-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .usernames-textarea:focus {
+            border-color: #4FC3F7;
+            box-shadow: 0 0 0 4px rgba(79, 195, 247, 0.1), 0 0 30px rgba(79, 195, 247, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .input-info {
+            margin-top: 1rem;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-text {
+            font-size: 0.9rem;
+            color: #aaa;
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .info-text::before {
+            content: "ℹ️";
+            font-size: 0.8rem;
+        }
+
+        .search-button {
+            align-self: center;
+            padding: 1.5rem 4rem;
+            background: linear-gradient(135deg, #4FC3F7 0%, #29B6F6 50%, #0288D1 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1.4rem;
+            font-weight: 700;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            white-space: nowrap;
+            min-width: 250px;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(79, 195, 247, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .search-button:hover::before {
+            left: 100%;
+        }
+
+        .search-button:hover {
+            background: linear-gradient(135deg, #29B6F6 0%, #0288D1 50%, #01579B 100%);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(79, 195, 247, 0.5);
+        }
+
+        .search-button:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .button-icon {
+            font-size: 1.2em;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Loading Page */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .loading-icon {
+            margin-bottom: 2rem;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #4FC3F7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-title {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            color: #ffffff;
+        }
+
+        .loading-progress {
+            width: 400px;
+            max-width: 90vw;
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4FC3F7, #29B6F6);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            color: #4FC3F7;
+            font-size: 1rem;
+            font-weight: 500;
+            min-height: 24px;
+        }
+
+        /* Results Page */
+        .results-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(30, 30, 30, 0.6);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .results-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .new-check-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #4FC3F7, #29B6F6);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .new-check-btn:hover {
+            background: linear-gradient(135deg, #29B6F6, #0288D1);
+            transform: translateY(-2px);
+        }
+
+        .section {
+            background: rgba(30, 30, 30, 0.6);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(20, 20, 20, 0.6);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: rgba(79, 195, 247, 0.2);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #4FC3F7;
+            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .old-username {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .new-username {
+            color: #51cf66;
+            font-weight: 600;
+        }
+
+        .na-row {
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .na-text {
+            color: #ff6b6b;
+            font-style: italic;
+        }
+
+        .copy-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(45deg, #4FC3F7, #29B6F6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: linear-gradient(45deg, #29B6F6, #0288D1);
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(45deg, #51cf66, #37b24d);
+        }
+
+        .copy-column-btn {
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4FC3F7;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Alert */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .title-section {
+                text-align: center;
+            }
+
+            .main-title {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .main-logo {
+                width: 90px;
+                height: 90px;
+            }
+
+            .results-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(79, 195, 247, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(79, 195, 247, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="page active" id="landing-page">
+        <div class="landing-container">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" class="main-logo" onerror="this.style.display='none'">
+                <div class="title-section">
+                    <h1 class="main-title">Twitter Username Checker</h1>
+                    <p class="subtitle">Find Updated Usernames</p>
+                </div>
+            </div>
+
+            <div class="search-container">
+                <form class="search-form" id="search-form">
+                    <div class="usernames-input-container">
+                        <div class="input-header">
+                            <span class="input-label">Enter Twitter usernames or links (one per line)</span>
+                            <span class="input-counter" id="username-counter">0 usernames</span>
+                        </div>
+                        <textarea 
+                            id="usernames-input" 
+                            class="usernames-textarea"
+                            placeholder="@username1&#10;https://x.com/username2&#10;username3&#10;https://twitter.com/username4"
+                            rows="12"
+                            maxlength="50000"
+                        ></textarea>
+                        <div class="input-info">
+                            <span class="info-text">Maximum 1000 usernames • Supports @username, x.com/username, twitter.com/username formats</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="search-button">
+                        <span class="button-text">Check Usernames</span>
+                        <span class="button-icon">🔍</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Page -->
+    <div class="page" id="loading-page">
+        <div class="loading-container">
+            <div class="loading-icon">
+                <div class="loading-spinner"></div>
+            </div>
+            <h2 class="loading-title">Analyzing Usernames</h2>
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Initializing...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Page -->
+    <div class="page" id="results-page">
+        <div class="results-container">
+            <div class="results-header">
+                <h2 class="results-title">Analysis Results</h2>
+                <button class="new-check-btn" onclick="startNewCheck()">New Check</button>
+            </div>
+
+            <div class="stats-grid" id="stats-grid"></div>
+
+            <div class="section" id="summary-section">
+                <h3 class="section-title">📊 Changed Usernames Summary</h3>
+                <div class="table-container">
+                    <table id="summary-table"></table>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">🔗 All Corrected Links</h3>
+                <button class="copy-btn copy-column-btn" onclick="copyColumn('links')">Copy All Links</button>
+                <div class="table-container">
+                    <table id="links-table"></table>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">👤 All Corrected Usernames</h3>
+                <button class="copy-btn copy-column-btn" onclick="copyColumn('usernames')">Copy All Usernames</button>
+                <div class="table-container">
+                    <table id="usernames-table"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_ID = '1ijBFvbjazdTmstXqTYd3veDp5N-0i-uQXMmumNZxgjA';
+        // Using public CORS proxy - works immediately, no setup needed
+        const CORS_PROXY = 'https://corsproxy.io/?';
+        const API_BASE = 'https://twittermedia.b-cdn.net';
+        const BATCH_SIZE = 20; // Smaller batches to avoid rate limits
+
+        let sheetData = null;
+        let results = [];
+
+        // Update username counter
+        document.getElementById('usernames-input').addEventListener('input', function() {
+            const text = this.value.trim();
+            const count = text ? text.split('\n').filter(line => line.trim()).length : 0;
+            document.getElementById('username-counter').textContent = `${count} username${count !== 1 ? 's' : ''}`;
+        });
+
+        // Form submission
+        document.getElementById('search-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('usernames-input').value.trim();
+            if (!input) {
+                showAlert('Please enter at least one username');
+                return;
+            }
+
+            const usernames = parseUsernames(input);
+            if (usernames.length === 0) {
+                showAlert('No valid usernames found');
+                return;
+            }
+
+            if (usernames.length > 1000) {
+                showAlert('Maximum 1000 usernames allowed');
+                return;
+            }
+
+            await processUsernames(usernames);
+        });
+
+        function showAlert(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert';
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+
+        function parseUsernames(input) {
+            const lines = input.split('\n').filter(line => line.trim());
+            const usernames = [];
+
+            for (const line of lines) {
+                const cleaned = line.trim();
+                let username = null;
+
+                // Extract username from various formats
+                if (cleaned.startsWith('@')) {
+                    username = cleaned.substring(1);
+                } else if (cleaned.includes('twitter.com/') || cleaned.includes('x.com/')) {
+                    const match = cleaned.match(/(?:twitter\.com|x\.com)\/([^/?#]+)/);
+                    if (match) username = match[1];
+                } else {
+                    username = cleaned;
+                }
+
+                if (username && username.length > 0) {
+                    // Remove query parameters and clean up
+                    username = username.split('?')[0].split('#')[0];
+                    usernames.push(username.toLowerCase());
+                }
+            }
+
+            return [...new Set(usernames)]; // Remove duplicates
+        }
+
+        async function processUsernames(usernames) {
+            showPage('loading-page');
+            updateProgress(0, 'Loading Google Sheet data...');
+
+            // Load sheet data
+            await loadSheetData();
+
+            updateProgress(10, `Checking ${usernames.length} usernames...`);
+
+            results = [];
+            let completed = 0;
+
+            // Process in smaller batches with delay
+            for (let i = 0; i < usernames.length; i += BATCH_SIZE) {
+                const batch = usernames.slice(i, i + BATCH_SIZE);
+                const promises = batch.map((username, index) => 
+                    // Add small delay between requests
+                    new Promise(resolve => 
+                        setTimeout(() => resolve(checkUsername(username)), index * 50)
+                    )
+                );
+                const batchResults = await Promise.all(promises);
+                results.push(...batchResults);
+
+                completed += batch.length;
+                const progress = 10 + (completed / usernames.length) * 85;
+                updateProgress(progress, `Processed ${completed} of ${usernames.length} usernames...`);
+
+                // Small delay between batches
+                if (i + BATCH_SIZE < usernames.length) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            updateProgress(100, 'Analysis complete!');
+            setTimeout(() => displayResults(), 500);
+        }
+
+        async function loadSheetData() {
+            if (sheetData) return;
+
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
+                const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+                const text = await response.text();
+                const json = JSON.parse(text.substring(47).slice(0, -2));
+                
+                sheetData = {};
+                json.table.rows.forEach(row => {
+                    if (row.c[0] && row.c[1]) {
+                        const username = row.c[0].v ? row.c[0].v.toLowerCase() : null;
+                        const twitterId = row.c[1].v ? row.c[1].v.toString() : null;
+                        if (username && twitterId) {
+                            sheetData[username] = twitterId;
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading sheet:', error);
+                sheetData = {};
+            }
+        }
+
+        async function getChallenge() {
+            try {
+                const url = `${API_BASE}/challenge/`;
+                const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+                return await response.json();
+            } catch (error) {
+                console.error('Challenge error:', error);
+                return null;
+            }
+        }
+
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function getSolution(timestamp, randomValue) {
+            const payload = `${timestamp}${randomValue}`;
+            const hash = await sha256(payload);
+            return hash.substring(0, 8);
+        }
+
+        async function checkUsernameAPI(username, challengeId, solution) {
+            try {
+                const apiUrl = `${API_BASE}/x-id/?id=${encodeURIComponent(username)}&challenge_id=${challengeId}&challenge_solution=${solution}`;
+                const response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
+
+                if (response.ok) {
+                    const text = await response.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        if (text.includes('suspended') || text.includes('does not exist')) {
+                            return null;
+                        }
+                        return null;
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('API error:', error);
+                return null;
+            }
+        }
+
+        async function checkUsername(originalUsername) {
+            const result = {
+                originalUsername: originalUsername,
+                newUsername: null,
+                status: 'unknown',
+                link: null
+            };
+
+            try {
+                // First check with username
+                const challenge1 = await getChallenge();
+                if (!challenge1) {
+                    result.status = 'error';
+                    return result;
+                }
+
+                const solution1 = await getSolution(challenge1.timestamp, challenge1.random_value);
+                const data1 = await checkUsernameAPI(originalUsername, challenge1.challenge_id, solution1);
+
+                if (data1 && data1.username) {
+                    result.newUsername = data1.username;
+                    result.status = data1.username.toLowerCase() === originalUsername ? 'unchanged' : 'changed';
+                    result.link = `https://x.com/${data1.username}`;
+                    return result;
+                }
+
+                // Username not found, check sheet for Twitter ID
+                const twitterId = sheetData[originalUsername];
+                if (!twitterId) {
+                    result.status = 'not_found';
+                    return result;
+                }
+
+                // Try with Twitter ID
+                const challenge2 = await getChallenge();
+                if (!challenge2) {
+                    result.status = 'error';
+                    return result;
+                }
+
+                const solution2 = await getSolution(challenge2.timestamp, challenge2.random_value);
+                const data2 = await checkUsernameAPI(twitterId, challenge2.challenge_id, solution2);
+
+                if (data2 && data2.username) {
+                    result.newUsername = data2.username;
+                    result.status = data2.username.toLowerCase() === originalUsername ? 'unchanged' : 'changed';
+                    result.link = `https://x.com/${data2.username}`;
+                } else {
+                    result.status = 'expired';
+                }
+
+            } catch (error) {
+                console.error(`Error checking ${originalUsername}:`, error);
+                result.status = 'error';
+            }
+
+            return result;
+        }
+
+        function displayResults() {
+            showPage('results-page');
+
+            // Calculate stats
+            const changed = results.filter(r => r.status === 'changed').length;
+            const unchanged = results.filter(r => r.status === 'unchanged').length;
+            const notFound = results.filter(r => r.status === 'not_found' || r.status === 'expired').length;
+            const total = results.length;
+
+            // Display stats
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-value">${total}</div>
+                    <div class="stat-label">Total Checked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #51cf66;">${changed}</div>
+                    <div class="stat-label">Changed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #4FC3F7;">${unchanged}</div>
+                    <div class="stat-label">Unchanged</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #ff6b6b;">${notFound}</div>
+                    <div class="stat-label">Not Found</div>
+                </div>
+            `;
+            document.getElementById('stats-grid').innerHTML = statsHtml;
+
+            // Summary table (changed and expired only)
+            const summaryData = results.filter(r => r.status === 'changed' || r.status === 'expired');
+            let summaryHtml = `
+                <thead>
+                    <tr>
+                        <th>Old Username</th>
+                        <th>New Username</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            summaryData.forEach(item => {
+                const rowClass = item.status === 'expired' ? 'na-row' : '';
+                const newUsername = item.status === 'expired' ? 'N/A' : item.newUsername;
+                const newClass = item.status === 'expired' ? 'na-text' : 'new-username';
+                
+                summaryHtml += `
+                    <tr class="${rowClass}">
+                        <td class="old-username">@${item.originalUsername}</td>
+                        <td class="${newClass}">@${newUsername}</td>
+                    </tr>
+                `;
+            });
+
+            summaryHtml += '</tbody>';
+            document.getElementById('summary-table').innerHTML = summaryHtml;
+
+            // Hide summary section if no changes
+            if (summaryData.length === 0) {
+                document.getElementById('summary-section').style.display = 'none';
+            }
+
+            // Links table
+            let linksHtml = `
+                <thead>
+                    <tr>
+                        <th>Link</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            results.forEach(item => {
+                const link = item.link || `https://x.com/${item.originalUsername}`;
+                linksHtml += `<tr><td>${link}</td></tr>`;
+            });
+
+            linksHtml += '</tbody>';
+            document.getElementById('links-table').innerHTML = linksHtml;
+
+            // Usernames table
+            let usernamesHtml = `
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            results.forEach(item => {
+                const username = item.newUsername || item.originalUsername;
+                usernamesHtml += `<tr><td>@${username}</td></tr>`;
+            });
+
+            usernamesHtml += '</tbody>';
+            document.getElementById('usernames-table').innerHTML = usernamesHtml;
+        }
+
+        function copyColumn(type) {
+            let text = '';
+            
+            if (type === 'links') {
+                text = results.map(item => item.link || `https://x.com/${item.originalUsername}`).join('\n');
+            } else {
+                text = results.map(item => `@${item.newUsername || item.originalUsername}`).join('\n');
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function startNewCheck() {
+            results = [];
+            document.getElementById('usernames-input').value = '';
+            document.getElementById('username-counter').textContent = '0 usernames';
+            showPage('landing-page');
+        }
+    </script>
+</body>
+</html>
