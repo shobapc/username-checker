@@ -525,31 +525,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Alert */
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 2rem;
-            background: rgba(255, 107, 107, 0.9);
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            z-index: 9999;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .logo-container {
@@ -701,10 +676,9 @@
 
     <script>
         const SHEET_ID = '1ijBFvbjazdTmstXqTYd3veDp5N-0i-uQXMmumNZxgjA';
-        // Using public CORS proxy - works immediately, no setup needed
-        const CORS_PROXY = 'https://corsproxy.io/?';
-        const API_BASE = 'https://twittermedia.b-cdn.net';
-        const BATCH_SIZE = 20; // Smaller batches to avoid rate limits
+        // Netlify Function URL - automatically works when deployed
+        const API_PROXY = '/.netlify/functions/proxy';
+        const BATCH_SIZE = 50; // Parallel requests
 
         let sheetData = null;
         let results = [];
@@ -721,31 +695,23 @@
             e.preventDefault();
             const input = document.getElementById('usernames-input').value.trim();
             if (!input) {
-                showAlert('Please enter at least one username');
+                alert('Please enter at least one username');
                 return;
             }
 
             const usernames = parseUsernames(input);
             if (usernames.length === 0) {
-                showAlert('No valid usernames found');
+                alert('No valid usernames found');
                 return;
             }
 
             if (usernames.length > 1000) {
-                showAlert('Maximum 1000 usernames allowed');
+                alert('Maximum 1000 usernames allowed');
                 return;
             }
 
             await processUsernames(usernames);
         });
-
-        function showAlert(message) {
-            const alert = document.createElement('div');
-            alert.className = 'alert';
-            alert.textContent = message;
-            document.body.appendChild(alert);
-            setTimeout(() => alert.remove(), 3000);
-        }
 
         function parseUsernames(input) {
             const lines = input.split('\n').filter(line => line.trim());
@@ -787,26 +753,16 @@
             results = [];
             let completed = 0;
 
-            // Process in smaller batches with delay
+            // Process in batches for parallel requests
             for (let i = 0; i < usernames.length; i += BATCH_SIZE) {
                 const batch = usernames.slice(i, i + BATCH_SIZE);
-                const promises = batch.map((username, index) => 
-                    // Add small delay between requests
-                    new Promise(resolve => 
-                        setTimeout(() => resolve(checkUsername(username)), index * 50)
-                    )
-                );
+                const promises = batch.map(username => checkUsername(username));
                 const batchResults = await Promise.all(promises);
                 results.push(...batchResults);
 
                 completed += batch.length;
                 const progress = 10 + (completed / usernames.length) * 85;
                 updateProgress(progress, `Processed ${completed} of ${usernames.length} usernames...`);
-
-                // Small delay between batches
-                if (i + BATCH_SIZE < usernames.length) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
             }
 
             updateProgress(100, 'Analysis complete!');
@@ -817,8 +773,7 @@
             if (sheetData) return;
 
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
-                const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+                const response = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`);
                 const text = await response.text();
                 const json = JSON.parse(text.substring(47).slice(0, -2));
                 
@@ -840,8 +795,7 @@
 
         async function getChallenge() {
             try {
-                const url = `${API_BASE}/challenge/`;
-                const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+                const response = await fetch(`${API_PROXY}?endpoint=challenge`);
                 return await response.json();
             } catch (error) {
                 console.error('Challenge error:', error);
@@ -864,8 +818,7 @@
 
         async function checkUsernameAPI(username, challengeId, solution) {
             try {
-                const apiUrl = `${API_BASE}/x-id/?id=${encodeURIComponent(username)}&challenge_id=${challengeId}&challenge_solution=${solution}`;
-                const response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
+                const response = await fetch(`${API_PROXY}?endpoint=x-id&id=${encodeURIComponent(username)}&challenge_id=${challengeId}&challenge_solution=${solution}`);
 
                 if (response.ok) {
                     const text = await response.text();
